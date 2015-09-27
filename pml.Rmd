@@ -1,0 +1,73 @@
+---
+title: "Practice Machine Learning - Course Project"
+author: "David Tran"
+date: "September 26, 2015"
+output: html_document
+---
+
+## Executive Summary
+
+This report analyzes the accuracy of accelerometers in performing proper weight lifting exercises. It does this by using the data set provided and predicting outcomes which are then tested against known data. The model built utilizes the random forest technique and is adjusted to ensure limitations on overfitting by reducing the maximum amount of predictors and allowing a more even train/test split. The random forest model is able to predict with a 99.3% accuracy.
+
+## Building of the Model
+
+The model chosen to predict the outcome is random forests. Random forests was used based on past experiences (from Kaggle) that showed an advanced way to achieve high accuracy in out-of-sample error while performing a singular technique.
+
+In order to build the model, the data was cleaned which meant:
+
+* Removal of any columns with missing or NA values
+* Removal of any columns with meta data or non-observational data (eg. Date/Participant)
+
+After cleaning, the data was partioned into two sets: train and test set, using a 60/40 split (recommended split) for **cross validation**. Using the training set, random forest was applied and applied only 7 variables of prediction to limit overfitting. Once the model was generated, it was then used to predict the values in the testing set which has known values. The known values were then compared to the predicted values to determine the accuracy of the model. A confusion matrix was used to determine the **out of sample error**.
+
+## Code
+
+```{r}
+# Loading libraries
+library(caret)
+library(randomForest)
+```
+
+```{r}
+# Read Data
+testdata <- read.csv("pml-testing.csv",header=TRUE, na.strings=c("","NA"))
+traindata <- read.csv("pml-training.csv",header=TRUE, na.strings=c("","NA"))
+```
+
+
+```{r}
+# Clean Data
+ctrd <- traindata[, (colSums(is.na(traindata)) < 19000 )]
+# Remove meta data columns
+ctrd <- ctrd[,-1:-7]
+```
+
+```{r}
+# Splitting into test / train sets
+set.seed(15)
+inTrain <- createDataPartition(y=ctrd$classe, p=0.6, list=FALSE)
+subtrain <- ctrd[inTrain,]
+subtest <- ctrd[-inTrain,]
+```
+
+```{r}
+# Applying Random Forest model
+set.seed(15)
+rfit <- randomForest(classe~.,data=subtrain,mtry=7,importance=TRUE)
+```
+
+```{r}
+# Setting prediction values
+pred <- predict(rfit,subtest)
+subtest$classecheck <- pred == subtest$classe
+table(pred,subtest$classe)
+```
+
+```{r}
+# Confusion Matrix
+confusionMatrix(pred,subtest$classe)
+```
+
+## Source:
+
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
